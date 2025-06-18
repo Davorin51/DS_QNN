@@ -1,0 +1,2 @@
+timestamp,arch,epochs,top1_acc,params,flops,model_size_bytes
+2025-06-18T22:34:16,resnet18,10,0.9155,11181642,3649611796,44806634
