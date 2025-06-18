@@ -8,7 +8,7 @@
 
 DS\_QNN provides an end‑to‑end PyTorch pipeline for
 
-* **Standard training** of CNN backbones (e.g. ResNet‑18)
+* **Standard training** of CNN backbones (VGG16, ResNet‑18, MobileNet, EfficientNet)
 * **Post‑training quantization (PTQ)** and **quantization‑aware training (QAT)**
 * **Model & FLOPs profiling** via **ptflops** and **nn‑meter**
 * Reproducible logs, figures and a ready‑to‑publish report template
