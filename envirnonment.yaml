@@ -1,0 +1,16 @@
+name: compress
+channels:
+  - pytorch
+  - conda-forge
+dependencies:
+  - python=3.11
+  - pip
+  - pip:
+      - torch==2.3.0+cu121
+      - torchvision==0.18.0+cu121
+      - torchaudio==2.3.0+cu121
+      - nn-meter
+      - ptflops
+      - pandas
+      - matplotlib
+      - jupyter

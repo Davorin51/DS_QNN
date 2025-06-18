@@ -1,0 +1,16 @@
+# conda / venv
+env/
+.venv/
+
+# Python artefakti
+__pycache__/
+*.py[cod]
+*.so
+.ipynb_checkpoints/
+
+# Jupyter izlazi (ako koristiš nbstripout, ovo možeš izostaviti)
+*.nbconvert.ipynb
+
+# Editor/OS smeće
+*.swp
+.DS_Store
