@@ -1,4 +1,3 @@
-Odlično — sad možeš README proširiti tako da pokriva **novi flow (pruning + metrics + automatizacija)**. Evo ažurirane verzije koja uključuje sve tvoje dodatke:
 
 ---
 
