@@ -1,0 +1,19 @@
+# Separate protocol: torchvision ResNet stem is retained; no hidden CIFAR adaptation.
+arch: resnet18
+dataset: cifar10
+pretrained: false
+input_size: 32
+epochs: 100
+batch_size: 128
+optimizer: sgd
+lr: 0.1
+weight_decay: 0.0005
+seed: 42
+val_fraction: 0.1
+device: auto
+benchmark_device: cpu
+output_dir: runs/resnet18-native32
+pruning_ratio: 0.5
+finetune_epochs: 10
+qat_epochs: 10
+quant_backend: x86

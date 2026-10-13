@@ -1,0 +1,22 @@
+# Offline integration fixture. Accuracy on random images is not a CIFAR-10 result.
+arch: tiny_cnn
+dataset: fake
+pretrained: false
+input_size: 32
+fake_samples: 40
+batch_size: 8
+epochs: 1
+finetune_epochs: 1
+qat_epochs: 1
+calibration_batches: 2
+benchmark_warmup: 2
+benchmark_repetitions: 5
+benchmark_batch_sizes: [1, 4]
+device: cpu
+benchmark_device: cpu
+output_dir: runs/smoke
+seed: 42
+val_fraction: 0.2
+num_workers: 0
+num_threads: 1
+deterministic: true

@@ -1,0 +1,62 @@
+{
+  "scope": "Synthetic software smoke workflow, not CIFAR-10 accuracy evidence",
+  "config": {
+    "arch": "tiny_cnn",
+    "dataset": "fake",
+    "data_dir": "datasets/cifar10",
+    "output_dir": "<temporary run directories>",
+    "input_size": 32,
+    "batch_size": 8,
+    "epochs": 1,
+    "lr": 0.001,
+    "weight_decay": 0.0005,
+    "optimizer": "adam",
+    "seed": 42,
+    "val_fraction": 0.2,
+    "num_workers": 0,
+    "pretrained": false,
+    "device": "cpu",
+    "benchmark_device": "cpu",
+    "deterministic": true,
+    "fake_samples": 40,
+    "max_batches": 0,
+    "pruning_ratio": 0.5,
+    "finetune_epochs": 1,
+    "qat_epochs": 1,
+    "calibration_batches": 2,
+    "quant_backend": "x86",
+    "benchmark_warmup": 2,
+    "benchmark_repetitions": 5,
+    "benchmark_batch_sizes": [
+      1,
+      4
+    ],
+    "num_threads": 1
+  },
+  "seeds": [
+    42,
+    43
+  ],
+  "completed_runs": 12,
+  "environment": {
+    "ds_qnn": "0.2.0",
+    "python": "3.12.14",
+    "platform": "Linux-6.18.44-x86_64-with-glibc2.39",
+    "processor": "x86_64",
+    "cpu_count": 9,
+    "threads": 1,
+    "cuda_available": false,
+    "cuda_version": null,
+    "gpu": null,
+    "packages": {
+      "torch": "2.8.0+cpu",
+      "torchvision": "0.23.0+cpu",
+      "torch-pruning": "1.6.1",
+      "numpy": "2.5.2",
+      "ds-qnn": "0.2.0"
+    },
+    "git_revision": "a9203e0b7e7e42b216955984c6d8d6d9a7ec1779",
+    "git_dirty": true,
+    "source_sha256": "670c0144b5d19ba2e24ecf4435d70d24a3a25c0672acf9ccf453d2d57a3cd6c3"
+  }
+}

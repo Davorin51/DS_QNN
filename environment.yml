@@ -1,0 +1,12 @@
+# Linux/Windows x86 CPU environment. See README for CUDA and macOS setup.
+name: ds-qnn
+channels:
+  - conda-forge
+dependencies:
+  - python=3.12
+  - pip
+  - pip:
+      - --extra-index-url https://download.pytorch.org/whl/cpu
+      - torch==2.8.0+cpu
+      - torchvision==0.23.0+cpu
+      - -e .[dev,export]

@@ -1,0 +1,122 @@
+{
+  "scope": "Functional checks, not accuracy or performance measurements",
+  "environment": {
+    "ds_qnn": "0.2.0",
+    "python": "3.12.14",
+    "platform": "Linux-6.18.44-x86_64-with-glibc2.39",
+    "processor": "x86_64",
+    "cpu_count": 9,
+    "threads": 1,
+    "cuda_available": false,
+    "cuda_version": null,
+    "gpu": null,
+    "packages": {
+      "torch": "2.8.0+cpu",
+      "torchvision": "0.23.0+cpu",
+      "torch-pruning": "1.6.1",
+      "numpy": "2.5.2",
+      "ds-qnn": "0.2.0"
+    },
+    "git_revision": "a9203e0b7e7e42b216955984c6d8d6d9a7ec1779",
+    "git_dirty": true,
+    "source_sha256": "08f19ec9d5699c17ea6f11f3cca92c8a66bcbde4e070b0583842c0bb6618364a"
+  },
+  "checks": [
+    {
+      "arch": "resnet18",
+      "method": "ptq",
+      "input_size": 32,
+      "synthetic": true,
+      "quantized_operators": 21,
+      "forward_shape": [
+        2,
+        10
+      ],
+      "structured_roundtrip_exact": true
+    },
+    {
+      "arch": "resnet18",
+      "method": "qat",
+      "input_size": 32,
+      "synthetic": true,
+      "quantized_operators": 21,
+      "forward_shape": [
+        2,
+        10
+      ],
+      "structured_roundtrip_exact": true
+    },
+    {
+      "arch": "mobilenet_v3",
+      "method": "ptq",
+      "input_size": 32,
+      "synthetic": true,
+      "quantized_operators": 64,
+      "forward_shape": [
+        2,
+        10
+      ],
+      "structured_roundtrip_exact": true
+    },
+    {
+      "arch": "mobilenet_v3",
+      "method": "qat",
+      "input_size": 32,
+      "synthetic": true,
+      "quantized_operators": 64,
+      "forward_shape": [
+        2,
+        10
+      ],
+      "structured_roundtrip_exact": true
+    },
+    {
+      "arch": "efficientnet_b0",
+      "method": "ptq",
+      "input_size": 32,
+      "synthetic": true,
+      "quantized_operators": 82,
+      "forward_shape": [
+        2,
+        10
+      ],
+      "structured_roundtrip_exact": true
+    },
+    {
+      "arch": "efficientnet_b0",
+      "method": "qat",
+      "input_size": 32,
+      "synthetic": true,
+      "quantized_operators": 82,
+      "forward_shape": [
+        2,
+        10
+      ],
+      "structured_roundtrip_exact": true
+    },
+    {
+      "arch": "vgg16",
+      "method": "ptq",
+      "input_size": 32,
+      "synthetic": true,
+      "quantized_operators": 16,
+      "forward_shape": [
+        2,
+        10
+      ],
+      "structured_roundtrip_exact": true
+    },
+    {
+      "arch": "vgg16",
+      "method": "qat",
+      "input_size": 32,
+      "synthetic": true,
+      "quantized_operators": 16,
+      "forward_shape": [
+        2,
+        10
+      ],
+      "structured_roundtrip_exact": true
+    }
+  ]
+}

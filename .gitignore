@@ -21,3 +21,20 @@ __pycache__/
 # Editor/OS smeće
 *.swp
 .DS_Store
+
+# Isolated experiment outputs and developer caches
+runs/
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+.coverage
+coverage.xml
+htmlcov/
+build/
+dist/
+exports/
+reports/
+*.pt
+*.pth
+*.onnx
+*.ts
