@@ -1,207 +1,191 @@
+# DS_QNN
 
----
+**Reproducible CNN training, pruning, CPU INT8 quantization and benchmarking.**
 
-# DS\_QNN
+[![Tests](https://github.com/Davorin51/DS_QNN/actions/workflows/tests.yml/badge.svg)](https://github.com/Davorin51/DS_QNN/actions/workflows/tests.yml)
+![Python 3.11-3.12](https://img.shields.io/badge/python-3.11--3.12-blue)
+[![MIT License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 
-*A lightweight framework for training, pruning and quantizing CNNs on CIFAR-10.*
+DS_QNN compares saved CNN models under an explicit experiment protocol. A shared
+pipeline trains baselines, applies compression, reloads the resulting artifact,
+evaluates it on held-out test data and records inference measurements. Version
+0.2.0 replaces the earlier independent scripts with a tested Python package.
 
----
+## What is implemented
 
-## Overview
+| Area | Behavior |
+| --- | --- |
+| Backbones | ResNet-18, VGG16-BN, MobileNetV3 Large and EfficientNet-B0; ten-class output |
+| Data | CIFAR-10, seeded train/validation split, untouched official test set, explicit resolution |
+| Baselines | Optional ImageNet initialization, Adam/SGD, weighted metrics, best/last checkpoints |
+| Structured pruning | Dependency-aware group L1 or random importance; changed topology is reloadable |
+| Unstructured pruning | Global L1 masks stay active through fine-tuning and checkpoint reload |
+| PTQ | Static INT8 conversion with calibration drawn only from clean training data |
+| QAT | CPU fake-quant training, frozen observers during validation, converted artifact evaluation |
+| Measurements | Accuracy, ECE, serialized size, estimated MACs/FLOPs, batch p50/p95 and throughput |
+| Reproducibility | Configuration, split indices/hash, hardware, versions, source hash and checkpoint provenance |
+| Workflow | CLI, baseline resume, independent multi-seed sweeps and protocol-checked summaries |
+| Export | Float ONNX export with ONNX Runtime numerical checks at batches 1 and 2 |
 
-DS\_QNN provides an end-to-end PyTorch pipeline for:
+The small `tiny_cnn` backbone and FakeData support offline software checks. They
+are not substitutes for real CIFAR-10 experiments.
 
-* **Baseline training** of CNN backbones (VGG16, ResNet-18, MobileNetV2, EfficientNet-B0)
-* **Structured / unstructured pruning** with automatic fine-tuning
-  – `struct_l1`, `struct_rand`, `unstruct_mag`
-* **Post-training quantization (PTQ)** and **quantization-aware training (QAT)**
-* **Model & FLOPs profiling** via **ptflops** and **nn-meter**
-* **Benchmarking & metrics logging** (latency, throughput, memory, ECE)
-* Reproducible logs, figures and a ready-to-publish report template
+## Installation
 
-Goal: achieve competitive accuracy with smaller, faster models – ideal for edge devices and coursework on model compression.
-
----
-
-## Repository Structure
-
-```
-DS_QNN/
-├─ datasets/     # CIFAR-10 auto-download
-├─ models/       # checkpoints (.pth, .full.pth, .ptq, .qat)
-├─ scripts/      # training, pruning, quantization, metrics
-├─ results/      # CSV / JSON logs per-arch
-├─ figures/      # plots
-├─ report/       # paper/thesis template
-├─ environment.yml
-└─ README.md
-```
-
----
-
-## Quick Start
-
-### 1. Clone & environment
+Use **Python 3.11 or 3.12**. PyTorch 2.8.0 and torchvision 0.23.0 are deliberately
+version-matched to the tested FX quantization adapter.
 
 ```bash
 git clone https://github.com/Davorin51/DS_QNN.git
 cd DS_QNN
-conda env create --prefix ./env -f environment.yml
-conda activate ./env
+python -m venv .venv
 ```
 
-### 2. Train a baseline
+Activate `.venv` with `source .venv/bin/activate` on Linux/macOS, or
+`.venv\Scripts\Activate.ps1` in Windows PowerShell. For Linux/Windows x86 CPU:
 
 ```bash
-python scripts/train.py \
-    --arch resnet18 \
-    --epochs 200 \
-    --batch-size 128
+python -m pip install torch==2.8.0 torchvision==0.23.0 --index-url https://download.pytorch.org/whl/cpu
+python -m pip install -e ".[dev,export]"
 ```
 
-Checkpoints → **models/**, logs → **results/**.
+For CUDA or macOS, install the matching 2.8.0/0.23.0 wheels using the
+[official PyTorch installation instructions](https://pytorch.org/get-started/previous-versions/),
+then install the package. A CPU Conda alternative is provided in `environment.yml`:
+`conda env create -f environment.yml`. The former misspelled environment file is retired.
 
-### 3. Quantize
+`requirements/constraints-py312-cpu.txt` captures the exact tested Linux/Python 3.12
+CPU dependency versions. After installing CPU wheels, use
+`python -m pip install -c requirements/constraints-py312-cpu.txt -e ".[dev,export]"`
+to reproduce that environment. The constraints file is not a cross-platform lock.
 
-#### PTQ (fast, no retraining)
+## Run a complete offline example
 
 ```bash
-python scripts/quantize_ptq_qat.py \
-    --arch resnet18 \
-    --ckpt models/resnet18_baseline.pth \
-    --mode ptq \
-    --data ./datasets/cifar10 \
-    --calib-batches 128 \
-    --batch-size 256
+ds-qnn sweep --config configs/smoke.yaml --seeds 42 43 --methods struct_l1 struct_rand unstruct_mag ptq qat
 ```
 
-#### QAT (with retraining)
+This runs real CNN training, all five compression modes, INT8 operator conversion,
+artifact reload, evaluation and benchmarking on synthetic images. It creates
+**12 isolated runs** and a combined summary under `runs/smoke/`, without downloading
+CIFAR-10 or pretrained weights. The console prints the completed summary folder.
+
+See [checked example outputs](examples/README.md) for raw measurements, grouped
+statistics and charts. These outputs are explicitly marked synthetic; their
+accuracy has no scientific interpretation as CIFAR-10 performance.
+
+## Train and compress CIFAR-10 models
 
 ```bash
-python scripts/quantize_ptq_qat.py \
-    --arch resnet18 \
-    --ckpt models/resnet18_baseline.pth \
-    --mode qat \
-    --qat-epochs 10 \
-    --batch-size 128
+ds-qnn train --config configs/resnet18_cifar10.yaml
 ```
 
-### 4. Prune + fine-tune
-
-Structured & unstructured pruning with ratios 0.3 / 0.5 / 0.7:
+Use the printed baseline folder in the following commands:
 
 ```bash
-python scripts/prune_and_finetune.py \
-  --arch vgg16 \
-  --ckpt models/vgg16_baseline.pth \
-  --data ./datasets/cifar10 \
-  --ratio 0.5 \
-  --ft-epochs 5 \
-  --batch-size 32 \
-  --global-batch 256 \
-  --input-size 224 \
-  --amp --deterministic --seed 1337
+ds-qnn prune --config configs/resnet18_cifar10.yaml --checkpoint runs/<baseline>/best.pt --method struct_l1 --ratio 0.5
+ds-qnn prune --config configs/resnet18_cifar10.yaml --checkpoint runs/<baseline>/best.pt --method unstruct_mag --ratio 0.5
+ds-qnn quantize --config configs/resnet18_cifar10.yaml --checkpoint runs/<baseline>/best.pt --mode ptq
+ds-qnn quantize --config configs/resnet18_cifar10.yaml --checkpoint runs/<baseline>/best.pt --mode qat
+ds-qnn benchmark --config configs/resnet18_cifar10.yaml --checkpoint runs/<ptq>/model.ts --device cpu
 ```
 
-* `.pth` → state\_dict
-* `.full.pth` → pruned model (for struct\_\*)
+The example configuration uses **ImageNet-pretrained ResNet-18 and 224x224 inputs**.
+A separate `resnet18_cifar10_32.yaml` uses random initialization and 32x32 inputs
+while retaining the original torchvision stem. Choose one protocol consistently;
+these are different experiments. The learning rate is constant and explicit.
 
----
+Training may use CUDA with `device: auto`; benchmark inference defaults to CPU
+for comparison with CPU INT8 artifacts. QAT fine-tuning is currently CPU-only.
+All input/configuration paths with spaces should be quoted.
 
-## Measuring Metrics
-
-Use **measure\_metrics.py** to evaluate latency, throughput, memory and calibration error (ECE).
-
-For unstructured pruning (architecture unchanged):
+### Multi-seed comparison
 
 ```bash
-python scripts/measure_metrics.py \
-    --arch mobilenet_v2 \
-    --ckpt models/mobilenet_v2_unstruct_mag_50.pth \
-    --device cuda \
-    --batch-size 512 \
-    --csv results/mobilenet_v2/metrics.csv \
-    --data ./datasets/cifar10
+ds-qnn sweep --config configs/resnet18_cifar10.yaml --seeds 42 43 44 45 46 --methods struct_l1 unstruct_mag ptq qat
+ds-qnn report --input runs/<baseline> runs/<pruned> runs/<quantized> --output reports/comparison
 ```
 
-For structured pruning (architecture changed):
+Each method starts independently from that seed's selected baseline. Reports
+write `measurements.csv`, `summary.csv`, source references and accuracy/latency
+plots. They reject incompatible protocols and duplicate method/seed/batch rows.
+Summary rows include the actual seed count, mean and sample standard deviation.
+Use matched seed sets for fair comparisons.
+
+### Resume and export
 
 ```bash
-python scripts/measure_metrics.py \
-    --arch mobilenet_v2 \
-    --ckpt models/mobilenet_v2_struct_l1_50.full.pth \
-    --device cuda \
-    --batch-size 512 \
-    --csv results/mobilenet_v2/metrics.csv \
-    --data ./datasets/cifar10
+ds-qnn train --config configs/resnet18_cifar10.yaml --resume runs/<interrupted>/last.pt
+ds-qnn export --checkpoint runs/<baseline>/best.pt --output exports/resnet18.onnx
 ```
 
----
+Baseline resume restores optimizer/RNG/DataLoader state and preserves the earlier
+history. ONNX export checks graph validity and numerical agreement with PyTorch.
+ONNX Runtime telemetry is disabled before the verification session is created.
 
-## Automating Experiments
+## Measurement contracts
 
-You can sweep over models × pruning ratios with:
+- Model selection uses validation data; the official test set is never used for
+  checkpoint selection, PTQ calibration or QAT observer updates.
+- Best-model accuracy is measured from the saved/reloaded artifact, not a different
+  final-epoch model. Pruned topology is rebuilt from an explicit layer recipe.
+- Latency is recorded per full batch. `amortized_ms_per_image` is separately named;
+  it is not standalone image latency when the batch exceeds one.
+- Timings include forward dispatch and CUDA synchronization on resident inputs;
+  preprocessing, transfers and loading are excluded. Hardware and thread count
+  accompany results. CPU peak memory is unavailable, not zero.
+- FLOPs use the declared convention 2 x estimated MACs. Packed INT8 parameter/MAC
+  counts are unavailable. Artifact size includes serialization/metadata overhead.
+- PyTorch 2.8 lacks deterministic enforcement for some INT8 kernels. Inference
+  uses a narrow context restoring the global flag afterwards; this exception is
+  recorded. Float training remains strict when requested.
+
+Full definitions and limitations are in [experiment_protocol.md](docs/experiment_protocol.md).
+No generic energy coefficient or unsupported performance claim is reported.
+
+## Validation and current evidence
 
 ```bash
-python scripts/run_grid.py \
-    --archs resnet18 mobilenet_v2 vgg16 \
-    --ratios 0.3 0.5 0.7 \
-    --data ./datasets/cifar10 \
-    --ft-epochs 5 --batch-size 128
+ruff check .
+ruff format --check .
+pytest --cov --cov-report=term-missing
+python -m build
 ```
 
-This will:
+CI runs these checks and the complete offline sweep on Python 3.11 and 3.12 with
+an **80% coverage gate**. Tests cover weighted metrics, train/test separation,
+mask persistence, topology reload, best-state selection, exact CPU resume,
+quantized operators, report guards and independent ONNX output verification.
+Additional synthetic probes exercised structured checkpoint round-trips and PTQ/QAT
+for all four real backbones. See [validation details](docs/validation.md).
 
-* Run pruning + fine-tune
-* Save checkpoints
-* Benchmark with measure\_metrics.py
-* Append results to `results/<arch>/metrics.csv`
+The original ResNet-18 CSV records **92.45%** best accuracy over 20 epochs. It is
+preserved under [results/legacy](results/legacy/README.md), with its protocol limits.
+It is not a result of the new validation protocol. **No fresh CIFAR-10 compression
+accuracy or hardware speedup is claimed by this refactor.** Those measurements
+require fresh experiments on the intended training/benchmark hardware.
 
----
+## Structure and further development
 
-## Dependencies
+Core modules live in `src/ds_qnn/`; configurations, tests, examples and protocol
+documentation are separate. The old script names are thin CLI wrappers rather
+than duplicate implementations. See [architecture](docs/architecture.md),
+[usage/migration](docs/usage.md), [contributing](CONTRIBUTING.md) and
+[changelog](CHANGELOG.md).
 
-| Package                               | Version tested    |
-| ------------------------------------- | ----------------- |
-| Python                                | 3.11              |
-| PyTorch                               | 2.3.0 + CUDA 12.1 |
-| torchvision                           | 0.18.0            |
-| torchaudio                            | 2.3.0             |
-| torch-pruning                         | 1.6.0             |
-| nn-meter, ptflops, pandas, matplotlib | latest            |
+Future work includes a modern quantization adapter, additional datasets,
+knowledge distillation, measured device power and deployment-specific exporters.
 
----
+## License and citation
 
-## Results (example, CIFAR-10)
+[MIT](LICENSE), Davorin Milicevic.
 
-| Model                       | Top-1 Acc. | Params ↓ | FLOPs ↓ | Latency (ms) |
-| --------------------------- | ---------- | -------- | ------- | ------------ |
-| ResNet-18 FP32 baseline     | 94.5 %     | –        | –       | 0.40         |
-| ResNet-18 struct\_l1 0.5    | 92.8 %     | 51 %     | 74 %    | 0.28         |
-| ResNet-18 unstruct\_mag 0.5 | 93.9 %     | 0 %      | 0 %     | 0.40         |
-
----
-
-## License
-
-MIT License – see **LICENSE**.
-
-## Citation
-
-```text
-@misc{ds_qnn2025,
-  author       = {Davorin Miličević},
-  title        = {DS_QNN: Quantization & Pruning of CNNs on CIFAR-10},
-  year         = 2025,
-  howpublished = {\url{https://github.com/Davorin51/DS_QNN}}
+```bibtex
+@software{milicevic_ds_qnn,
+  author = {Davorin Miličević},
+  title = {DS_QNN: Reproducible CNN Compression and Benchmarking},
+  version = {0.2.0},
+  year = {2026},
+  url = {https://github.com/Davorin51/DS_QNN}
 }
 ```
-
----
-
-✨ *Train, prune, quantize – and measure everything reproducibly.*
-
----
-
-Hoćeš da ti napišem i **kratak primjer CSV logova** (npr. metrics.csv + prune\_metrics.csv) za README, da vizualno pokažeš kako izgleda output nakon run\_grid.py?
-

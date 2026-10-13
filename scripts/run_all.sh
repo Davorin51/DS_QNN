@@ -1,22 +1,5 @@
-#!/bin/bash
-
-DATA_PATH=../datasets/cifar10
-EPOCHS=20
-BATCH_SIZE=32
-
-# Redom pokrećemo treniranje svake arhitekture
-for MODEL in resnet18 vgg16 mobilenet_v3
-do
-  echo "=================================================="
-  echo ">> Treniranje modela: $MODEL"
-  echo "=================================================="
-  
-  python baseline_training.py \
-    --arch $MODEL \
-    --data $DATA_PATH \
-    --epochs $EPOCHS \
-    --batch-size $BATCH_SIZE \
-    --export-onnx
-  
-  echo ""
-done
+#!/usr/bin/env bash
+set -euo pipefail
+cd "$(dirname "${BASH_SOURCE[0]}")/.."
+python -m ds_qnn sweep --config configs/resnet18_cifar10.yaml \
+  --seeds 42 43 44 45 46 --methods struct_l1 unstruct_mag ptq qat "$@"

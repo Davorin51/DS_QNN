@@ -1,0 +1,7 @@
+include environment.yml CHANGELOG.md CONTRIBUTING.md
+recursive-include configs *.yaml
+recursive-include docs *.md
+recursive-include examples *.json *.csv *.png
+recursive-include results/legacy *.csv *.md
+recursive-include scripts *.py *.sh
+recursive-include requirements *.txt
